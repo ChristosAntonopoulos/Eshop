@@ -58,6 +58,7 @@ OpenAPI 3.0 spec and human-readable docs for the C# backend:
 
 | Resource | Path |
 |----------|------|
+| **Backend developer guide** (clone, run, entities, migration) | [docs/BACKEND_DEVELOPER.md](docs/BACKEND_DEVELOPER.md) |
 | OpenAPI spec (source of truth) | [docs/openapi.yaml](docs/openapi.yaml) |
 | Endpoint overview | [docs/API.md](docs/API.md) |
 | Swagger UI (static) | [public/api-docs.html](public/api-docs.html) |

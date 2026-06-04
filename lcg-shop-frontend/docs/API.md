@@ -2,6 +2,8 @@
 
 Human-readable overview for the C# backend. The machine-readable spec is **[openapi.yaml](./openapi.yaml)** (OpenAPI 3.0).
 
+**Full onboarding (clone, run, domain model, phased migration):** **[BACKEND_DEVELOPER.md](./BACKEND_DEVELOPER.md)**
+
 **Base URL:** `VITE_API_BASE_URL` → default `http://localhost:8080/api`  
 All paths below are appended to that base (e.g. full URL `http://localhost:8080/api/products`).
 

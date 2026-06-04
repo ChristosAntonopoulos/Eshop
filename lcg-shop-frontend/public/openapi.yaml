@@ -523,6 +523,10 @@ components:
         createdAt:
           type: string
           format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          description: Domain field; optional in responses until frontend types include it
 
     Category:
       type: object
@@ -622,6 +626,10 @@ components:
 
     OrderResponse:
       type: object
+      description: |
+        Checkout response DTO (frontend contract). Persist orders with domain statuses
+        PENDING, PAID, SHIPPED, DELIVERED, CANCELLED — map to this JSON for now.
+        See docs/BACKEND_DEVELOPER.md §7.
       required: [id, status, subtotal, total, createdAt]
       properties:
         id:
@@ -629,6 +637,7 @@ components:
         status:
           type: string
           enum: [pending, confirmed, cancelled]
+          description: Checkout DTO only; DB should use PENDING/PAID/SHIPPED/DELIVERED/CANCELLED
         subtotal:
           type: number
           format: double
