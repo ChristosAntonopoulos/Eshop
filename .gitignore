@@ -1,0 +1,19 @@
+# Dependencies & build
+node_modules/
+dist/
+*.local
+.env
+.env.*
+!.env.example
+
+# Logs & OS
+*.log
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Cursor / agents (optional local)
+agent-transcripts/

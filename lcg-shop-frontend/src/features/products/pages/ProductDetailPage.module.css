@@ -1,0 +1,144 @@
+.center {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-16);
+}
+
+.breadcrumb {
+  display: flex;
+  gap: var(--space-2);
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-6);
+}
+
+.breadcrumb a {
+  color: var(--color-accent-dark);
+  text-decoration: none;
+}
+
+.grid {
+  display: grid;
+  gap: var(--space-10);
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.mainImage {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-muted);
+}
+
+.thumbs {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.thumb,
+.thumbActive {
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+  background: none;
+}
+
+.thumbActive {
+  border-color: var(--color-accent);
+}
+
+.thumb img,
+.thumbActive img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  display: block;
+}
+
+.title {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-weight: 800;
+  margin: var(--space-3) 0;
+}
+
+.brand {
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-3);
+}
+
+.stockOk {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-success, #15803d);
+}
+
+.stockLow {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-warning, #b45309);
+}
+
+.stockOut {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-danger, #b91c1c);
+}
+
+.short {
+  font-weight: 500;
+  margin: var(--space-4) 0;
+}
+
+.desc {
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.nutrition {
+  margin-top: var(--space-6);
+  padding: var(--space-4);
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-md);
+}
+
+.nutrition h2 {
+  font-size: 1rem;
+  margin-bottom: var(--space-3);
+}
+
+.nutrition dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-2) var(--space-4);
+  font-size: 0.9rem;
+}
+
+.nutrition dt {
+  color: var(--color-text-muted);
+}
+
+.purchase {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-8);
+}
+
+.related {
+  margin-top: var(--space-16);
+}
+
+.related h2 {
+  font-size: 1.5rem;
+  margin-bottom: var(--space-6);
+}

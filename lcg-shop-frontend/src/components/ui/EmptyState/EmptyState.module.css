@@ -1,0 +1,23 @@
+.root {
+  text-align: center;
+  padding: var(--space-12) var(--space-4);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--color-border);
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.description {
+  margin-top: var(--space-3);
+  color: var(--color-text-muted);
+  max-width: 28rem;
+  margin-inline: auto;
+}
+
+.action {
+  margin-top: var(--space-6);
+}

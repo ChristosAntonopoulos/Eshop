@@ -1,0 +1,22 @@
+# Optional: use if your cluster routes HTTP via Ingress instead of NodePort only.
+# Primary public URL for this app is NodePort 30083 → http://185.193.66.50:30083/
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: lcg-shop
+  namespace: lcg-shop
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: lcg-shop.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: lcg-shop
+                port:
+                  number: 80

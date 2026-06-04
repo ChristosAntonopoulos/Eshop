@@ -1,0 +1,17 @@
+.wrap {
+  text-align: center;
+  padding: var(--space-16) 0;
+}
+
+.code {
+  font-size: 4rem;
+  font-weight: 800;
+  color: var(--color-accent);
+  line-height: 1;
+}
+
+.wrap a {
+  display: inline-block;
+  margin-top: var(--space-6);
+  text-decoration: none;
+}

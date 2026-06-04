@@ -1,0 +1,83 @@
+.footer {
+  margin-top: auto;
+  background: var(--color-primary);
+  color: #e5e7eb;
+  padding: var(--space-12) 0 var(--space-8);
+}
+
+.grid {
+  display: grid;
+  gap: var(--space-8);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.brand {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: white;
+}
+
+.tagline {
+  margin-top: var(--space-2);
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+.heading {
+  font-weight: 700;
+  color: white;
+  margin-bottom: var(--space-3);
+}
+
+.links {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.links a {
+  color: #d1d5db;
+  text-decoration: none;
+}
+
+.links a:hover {
+  color: var(--color-accent);
+}
+
+.text {
+  display: flex;
+  gap: var(--space-2);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #d1d5db;
+}
+
+.inlineIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.instagram {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.copy {
+  margin-top: var(--space-10);
+  padding-top: var(--space-6);
+  border-top: 1px solid #374151;
+  font-size: 0.85rem;
+  color: #9ca3af;
+  text-align: center;
+}

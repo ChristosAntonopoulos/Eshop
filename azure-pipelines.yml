@@ -1,0 +1,124 @@
+# LCG Shop frontend — build, push Docker Hub, deploy to Kubernetes (NodePort 30083)
+trigger:
+  branches:
+    include:
+      - master
+      - develop
+      - main
+      - "*"
+  paths:
+    include:
+      - lcg-shop-frontend/*
+      - azure-pipelines.yml
+      - lcg-shop-frontend/Dockerfile
+      - lcg-shop-frontend/.dockerignore
+
+variables:
+  buildConfiguration: Release
+  nodeVersion: 18.x
+  imageName: lcg-shop
+  kubernetesNamespace: lcg-shop
+  dockerHubRepo: botsystem13/lcg-shop
+  # Public URL after deploy (NodePort on cluster node)
+  publicUrl: http://185.193.66.50:30083/
+
+stages:
+  - stage: Package
+    displayName: Package Application
+    jobs:
+      - job: Package
+        displayName: Create Docker Image
+        pool:
+          name: Default
+        steps:
+          - script: |
+              docker build \
+                -t $(imageName):$(Build.BuildId) \
+                -t $(imageName):latest \
+                --build-arg VITE_USE_MOCK_DATA=true \
+                --build-arg VITE_API_BASE_URL=http://localhost:8080/api \
+                -f lcg-shop-frontend/Dockerfile \
+                lcg-shop-frontend/
+            displayName: Build LCG Shop Docker image
+
+          - script: |
+              echo "Attempting Docker Hub login..."
+              echo "Username: $DOCKER_USERNAME"
+              echo "Password length: ${#DOCKER_PASSWORD}"
+              echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+              echo "Docker login completed"
+            displayName: Login to Docker Hub
+            env:
+              DOCKER_USERNAME: $(DOCKER_USERNAME)
+              DOCKER_PASSWORD: $(DOCKER_PASSWORD)
+
+          - script: docker tag $(imageName):$(Build.BuildId) $(dockerHubRepo):$(Build.BuildId)
+            displayName: Tag image with build id
+
+          - script: docker tag $(imageName):latest $(dockerHubRepo):latest
+            displayName: Tag image as latest
+
+          - script: docker push $(dockerHubRepo):$(Build.BuildId)
+            displayName: Push image with build id
+
+          - script: docker push $(dockerHubRepo):latest
+            displayName: Push image as latest
+
+          - script: docker images | grep $(imageName) || docker images | grep lcg-shop
+            displayName: List LCG Shop Docker images
+
+  - stage: Deploy
+    displayName: Deploy to Kubernetes
+    dependsOn: Package
+    jobs:
+      - job: Deploy
+        displayName: Deploy to Kubernetes
+        pool:
+          name: Default
+        steps:
+          - script: |
+              set -e
+              echo "Starting LCG Shop deployment..."
+              echo "Target URL: $(publicUrl)"
+
+              kubectl apply -f lcg-shop-frontend/k8s/namespace.yaml
+
+              echo "Cleaning up old pods and deployments..."
+              kubectl delete pods -n $(kubernetesNamespace) -l app=lcg-shop --force --grace-period=0 || true
+              kubectl delete deployment lcg-shop -n $(kubernetesNamespace) || true
+
+              echo "Deploying application..."
+              kubectl apply -f lcg-shop-frontend/k8s/deployment.yaml
+              kubectl apply -f lcg-shop-frontend/k8s/service.yaml
+              kubectl apply -f lcg-shop-frontend/k8s/ingress.yaml || true
+
+              echo "Waiting for lcg-shop deployment..."
+              kubectl rollout status deployment/lcg-shop -n $(kubernetesNamespace) --timeout=300s || {
+                echo "Deployment failed. Pod status:"
+                kubectl get pods -n $(kubernetesNamespace) -l app=lcg-shop
+                kubectl logs -n $(kubernetesNamespace) -l app=lcg-shop --tail=50
+                kubectl get events -n $(kubernetesNamespace) --sort-by='.lastTimestamp' | tail -30
+                kubectl describe pods -n $(kubernetesNamespace) -l app=lcg-shop
+                exit 1
+              }
+
+              echo "Service endpoints:"
+              kubectl get svc -n $(kubernetesNamespace) lcg-shop
+            displayName: Deploy to Kubernetes
+
+  - stage: Test
+    displayName: Post-Deployment Tests
+    dependsOn: Deploy
+    jobs:
+      - job: Test
+        displayName: Test deployed application
+        pool:
+          name: Default
+        steps:
+          - script: |
+              frontendUrl="$(publicUrl)"
+              echo "Testing LCG Shop frontend at $frontendUrl"
+              curl -sf "$frontendUrl" | head -20
+              echo ""
+              echo "Smoke test OK"
+            displayName: Test frontend (NodePort 30083)

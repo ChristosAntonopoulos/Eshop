@@ -1,0 +1,9 @@
+.section {
+  margin-top: var(--space-12);
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-12);
+}

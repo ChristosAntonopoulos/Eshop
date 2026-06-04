@@ -1,0 +1,35 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.new {
+  background: var(--color-accent-soft);
+  color: var(--color-accent-dark);
+}
+
+.sale {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.out-of-stock {
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+}
+
+.low-stock {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.category {
+  background: var(--color-primary);
+  color: white;
+}
