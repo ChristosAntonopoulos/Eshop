@@ -61,7 +61,7 @@ Login, register and account pages work with **mock auth** (`VITE_USE_MOCK_AUTH=t
 | `admin@lcgshop.gr` | `admin123` | Admin |
 | `dimitris@example.com` | `demo123` | Customer |
 
-Routes: `/login`, `/register`, `/account`. Set `VITE_USE_MOCK_AUTH=false` when the C# backend exposes `/auth/login`, `/auth/register`, `/auth/me`.
+Routes: `/login`, `/register`, `/account`. Set `VITE_USE_MOCK_AUTH=false` when your backend exposes `/auth/login`, `/auth/register`, `/auth/me` (see [docs/JAVA_BACKEND_DEVELOPER.md](docs/JAVA_BACKEND_DEVELOPER.md)).
 
 ## Product images
 
@@ -73,7 +73,8 @@ OpenAPI 3.0 spec and human-readable docs for the C# backend:
 
 | Resource | Path |
 |----------|------|
-| **Backend developer guide** (clone, run, entities, migration) | [docs/BACKEND_DEVELOPER.md](docs/BACKEND_DEVELOPER.md) |
+| **Java backend guide** (Spring Boot, JWT, connection) | [docs/JAVA_BACKEND_DEVELOPER.md](docs/JAVA_BACKEND_DEVELOPER.md) |
+| **Domain model** (entities, ER diagram) | [docs/BACKEND_DEVELOPER.md](docs/BACKEND_DEVELOPER.md) |
 | OpenAPI spec (source of truth) | [docs/openapi.yaml](docs/openapi.yaml) |
 | Endpoint overview | [docs/API.md](docs/API.md) |
 | Swagger UI (static) | [public/api-docs.html](public/api-docs.html) |

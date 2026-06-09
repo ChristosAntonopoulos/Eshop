@@ -1,6 +1,13 @@
 # LCG Shop — Backend developer guide
 
-This guide is for the **C# / ASP.NET** developer building the API and database. The repository currently contains the **React frontend** and an **API contract** (OpenAPI). There is **no backend project in this repo yet** — you add your own solution (e.g. `LcgShop.Api`) and connect the frontend when ready.
+This guide covers the **domain model**, database relationships, and entity ↔ API mapping for any backend stack. The repository contains the **React frontend** and an **API contract** (OpenAPI). There is **no backend project in this repo yet**.
+
+| Your stack | Connection guide |
+|------------|------------------|
+| **Java / Spring Boot** | **[JAVA_BACKEND_DEVELOPER.md](./JAVA_BACKEND_DEVELOPER.md)** (recommended for Java devs) |
+| C# / ASP.NET | Sections §3, §9 below + [API.md](./API.md) |
+
+You add your own API project (e.g. `lcg-shop-api/`) and connect the frontend when ready.
 
 ---
 

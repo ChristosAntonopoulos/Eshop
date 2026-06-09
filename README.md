@@ -20,7 +20,8 @@ npm run dev
 
 - **Kubernetes:** NodePort `30083` — see [lcg-shop-frontend/docs/DEPLOYMENT.md](lcg-shop-frontend/docs/DEPLOYMENT.md)
 - **CI/CD:** [`azure-pipelines.yml`](azure-pipelines.yml)
-- **Backend guide:** [lcg-shop-frontend/docs/BACKEND_DEVELOPER.md](lcg-shop-frontend/docs/BACKEND_DEVELOPER.md)
+- **Java backend guide:** [lcg-shop-frontend/docs/JAVA_BACKEND_DEVELOPER.md](lcg-shop-frontend/docs/JAVA_BACKEND_DEVELOPER.md)
+- **Domain model:** [lcg-shop-frontend/docs/BACKEND_DEVELOPER.md](lcg-shop-frontend/docs/BACKEND_DEVELOPER.md)
 - **Backend API contract:** [lcg-shop-frontend/docs/openapi.yaml](lcg-shop-frontend/docs/openapi.yaml)
 
 ## License

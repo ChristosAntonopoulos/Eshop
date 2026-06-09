@@ -1,8 +1,13 @@
 # LCG Shop — Backend API contract
 
-Human-readable overview for the C# backend. The machine-readable spec is **[openapi.yaml](./openapi.yaml)** (OpenAPI 3.0).
+Human-readable API overview for backend developers. The machine-readable spec is **[openapi.yaml](./openapi.yaml)** (OpenAPI 3.0).
 
-**Full onboarding (clone, run, domain model, phased migration):** **[BACKEND_DEVELOPER.md](./BACKEND_DEVELOPER.md)**
+**Backend guides:**
+
+| Stack | Guide |
+|-------|-------|
+| **Java / Spring Boot** | **[JAVA_BACKEND_DEVELOPER.md](./JAVA_BACKEND_DEVELOPER.md)** |
+| Domain model + ER diagram (any language) | [BACKEND_DEVELOPER.md](./BACKEND_DEVELOPER.md) |
 
 **Base URL:** `VITE_API_BASE_URL` → default `http://localhost:8080/api`  
 All paths below are appended to that base (e.g. full URL `http://localhost:8080/api/products`).
@@ -129,7 +134,7 @@ npx @redocly/cli preview-docs docs/openapi.yaml
 
 ## CORS
 
-The browser calls the API from the Vite origin (e.g. `http://localhost:5173`). Enable CORS on the ASP.NET API for development.
+The browser calls the API from the Vite origin (e.g. `http://localhost:5173`). Enable CORS on your API for development (see [JAVA_BACKEND_DEVELOPER.md §7](./JAVA_BACKEND_DEVELOPER.md#7-api-base-url-and-cors)).
 
 ---
 
