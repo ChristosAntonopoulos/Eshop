@@ -1,0 +1,144 @@
+.page {
+  display: grid;
+  min-height: calc(100vh - 64px - var(--space-20));
+  margin: calc(-1 * var(--space-8)) calc(-1 * var(--space-4)) 0;
+}
+
+@media (min-width: 900px) {
+  .page {
+    grid-template-columns: 1fr 1fr;
+    margin: calc(-1 * var(--space-8)) 0 0;
+  }
+}
+
+.panel {
+  position: relative;
+  display: none;
+  background: linear-gradient(145deg, var(--color-primary) 0%, #1a3a2a 55%, #14532d 100%);
+  color: white;
+  overflow: hidden;
+}
+
+@media (min-width: 900px) {
+  .panel {
+    display: flex;
+    align-items: center;
+    padding: var(--space-12);
+  }
+}
+
+.panelInner {
+  position: relative;
+  z-index: 1;
+  max-width: 420px;
+}
+
+.panelGlow {
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.35) 0%, transparent 70%);
+  top: -80px;
+  right: -60px;
+  pointer-events: none;
+}
+
+.brand {
+  font-weight: 800;
+  font-size: 1.5rem;
+  color: white;
+  text-decoration: none;
+  display: inline-block;
+  margin-bottom: var(--space-10);
+}
+
+.brandMark {
+  color: var(--color-accent);
+}
+
+.panelTitle {
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: var(--space-4);
+}
+
+.panelText {
+  color: #d1d5db;
+  line-height: 1.65;
+  margin-bottom: var(--space-8);
+}
+
+.perks {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.perks li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: 0.95rem;
+  color: #e5e7eb;
+}
+
+.perks svg {
+  flex-shrink: 0;
+  color: var(--color-accent);
+}
+
+.formSide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8) var(--space-4);
+  background: var(--color-background);
+}
+
+.formCard {
+  width: 100%;
+  max-width: 420px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-8);
+  box-shadow: var(--shadow-md);
+}
+
+.formHeader {
+  margin-bottom: var(--space-6);
+}
+
+.formHeader h1 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: var(--space-2);
+}
+
+.formHeader p {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+}
+
+.formFooter {
+  margin-top: var(--space-6);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.formFooter a {
+  color: var(--color-accent-dark);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.formFooter a:hover {
+  text-decoration: underline;
+}

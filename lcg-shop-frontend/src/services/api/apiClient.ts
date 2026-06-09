@@ -1,4 +1,12 @@
+import { loadAuthSession } from "@/features/auth/utils/authStorage";
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
+
+function authHeaders(): Record<string, string> {
+  const session = loadAuthSession();
+  if (!session?.token) return {};
+  return { Authorization: `Bearer ${session.token}` };
+}
 
 export type QueryParams = Record<
   string,
@@ -25,7 +33,9 @@ function buildUrl(path: string, params?: RequestOptions["params"]) {
 
 export const apiClient = {
   async get<T>(path: string, options?: RequestOptions): Promise<T> {
-    const response = await fetch(buildUrl(path, options?.params));
+    const response = await fetch(buildUrl(path, options?.params), {
+      headers: authHeaders(),
+    });
 
     if (!response.ok) {
       throw new Error(`GET ${path} failed with status ${response.status}`);
@@ -39,6 +49,7 @@ export const apiClient = {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...authHeaders(),
       },
       body: JSON.stringify(body),
     });

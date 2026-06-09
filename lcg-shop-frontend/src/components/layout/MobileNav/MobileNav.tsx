@@ -10,9 +10,10 @@ interface MobileNavProps {
   open: boolean;
   links: NavLinkItem[];
   onClose: () => void;
+  footer?: React.ReactNode;
 }
 
-export function MobileNav({ open, links, onClose }: MobileNavProps) {
+export function MobileNav({ open, links, onClose, footer }: MobileNavProps) {
   if (!open) return null;
 
   return (
@@ -33,6 +34,7 @@ export function MobileNav({ open, links, onClose }: MobileNavProps) {
           </li>
         ))}
       </ul>
+      {footer}
     </nav>
   );
 }

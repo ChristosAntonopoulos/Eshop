@@ -45,8 +45,23 @@ Copy `.env.example` to `.env`:
 
 ```env
 VITE_USE_MOCK_DATA=true
+VITE_USE_MOCK_AUTH=true
 VITE_API_BASE_URL=http://localhost:8080/api
 ```
+
+## Authentication (mock)
+
+Login, register and account pages work with **mock auth** (`VITE_USE_MOCK_AUTH=true`). Guest checkout always works — no login required.
+
+**Demo accounts:**
+
+| Email | Password | Role |
+|-------|----------|------|
+| `maria@example.com` | `password123` | Customer |
+| `admin@lcgshop.gr` | `admin123` | Admin |
+| `dimitris@example.com` | `demo123` | Customer |
+
+Routes: `/login`, `/register`, `/account`. Set `VITE_USE_MOCK_AUTH=false` when the C# backend exposes `/auth/login`, `/auth/register`, `/auth/me`.
 
 ## Product images
 

@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { Menu, Search, ShoppingCart, X } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { useCart } from "@/features/cart/CartContext";
+import { MobileAuthLinks, UserMenu } from "@/features/auth/components/UserMenu";
 import { MobileNav } from "../MobileNav";
 import styles from "./Header.module.css";
 
@@ -54,6 +55,7 @@ export function Header() {
           </nav>
 
           <div className={styles.actions}>
+            <UserMenu />
             <button
               type="button"
               className={styles.iconBtn}
@@ -96,7 +98,12 @@ export function Header() {
         )}
       </Container>
 
-      <MobileNav open={mobileOpen} links={navLinks} onClose={() => setMobileOpen(false)} />
+      <MobileNav
+        open={mobileOpen}
+        links={navLinks}
+        onClose={() => setMobileOpen(false)}
+        footer={<MobileAuthLinks onClose={() => setMobileOpen(false)} />}
+      />
     </header>
   );
 }
