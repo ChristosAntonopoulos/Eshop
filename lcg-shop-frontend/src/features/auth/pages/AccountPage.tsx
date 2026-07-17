@@ -166,6 +166,12 @@ export function AccountPage() {
           <Package size={22} />
           <span>View cart</span>
         </Link>
+        {isAdmin && (
+          <Link to="/admin" className={styles.quickAction}>
+            <Shield size={22} />
+            <span>Admin panel</span>
+          </Link>
+        )}
       </div>
     </Container>
   );

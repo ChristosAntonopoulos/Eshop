@@ -2,15 +2,22 @@ openapi: 3.0.3
 info:
   title: LCG Shop API
   description: |
-    REST API contract consumed by the LCG Shop React frontend when
-    `VITE_USE_MOCK_DATA=false`. Paths are relative to `VITE_API_BASE_URL`
+    REST API contract consumed by the LCG Shop React frontend when mock flags
+    are set to `false`. Paths are relative to `VITE_API_BASE_URL`
     (default `http://localhost:8080/api`).
+
+    Flags:
+    - `VITE_USE_MOCK_DATA=false` — products + categories (storefront + admin CRUD)
+    - `VITE_USE_MOCK_AUTH=false` — auth + admin customers
+    - `VITE_USE_MOCK_ORDERS=false` — checkout create + admin orders
 
     Source of truth for frontend usage:
     - `src/services/products/httpProductRepository.ts`
     - `src/services/categories/httpCategoryRepository.ts`
-    - Checkout (planned): `POST /orders`
-  version: 1.0.0
+    - `src/services/orders/httpOrderRepository.ts`
+    - `src/services/admin/httpAdminCustomerRepository.ts`
+    - `src/services/auth/httpAuthRepository.ts`
+  version: 1.1.0
   contact:
     name: LCG Shop Frontend Team
 
@@ -20,11 +27,13 @@ servers:
 
 tags:
   - name: Products
-    description: Catalog listing, detail, featured, and related products
+    description: Catalog listing, detail, featured, related, and admin CRUD
   - name: Categories
-    description: Product category navigation
+    description: Category navigation and admin CRUD
   - name: Orders
-    description: Checkout — create order (frontend not wired yet; contract for backend)
+    description: Checkout create order and admin order management
+  - name: Admin
+    description: Admin-only customer listing (requires ROLE_ADMIN / Bearer JWT)
 
 paths:
   /products:
@@ -33,8 +42,9 @@ paths:
       operationId: getProducts
       summary: List products with optional filters
       description: |
-        Returns active products. Supports text search, category filter, price range,
-        stock filter, and sort order. Used by the product listing page.
+        Returns products. By default only active products. Pass `includeInactive=true`
+        for the admin catalog. Supports text search, category filter, price range,
+        stock filter, and sort order.
       parameters:
         - $ref: "#/components/parameters/search"
         - $ref: "#/components/parameters/categoryId"
@@ -42,6 +52,7 @@ paths:
         - $ref: "#/components/parameters/maxPrice"
         - $ref: "#/components/parameters/sortBy"
         - $ref: "#/components/parameters/onlyInStock"
+        - $ref: "#/components/parameters/includeInactive"
       responses:
         "200":
           description: Matching products (may be empty array)
@@ -83,6 +94,32 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "500":
           $ref: "#/components/responses/InternalServerError"
+    post:
+      tags: [Products]
+      operationId: createProduct
+      summary: Create product (admin)
+      description: Requires Bearer JWT with ROLE_ADMIN. Used when `VITE_USE_MOCK_DATA=false`.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductWriteInput"
+      responses:
+        "201":
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden — admin role required
 
   /products/featured:
     get:
@@ -262,12 +299,99 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /products/by-id/{id}:
+    get:
+      tags: [Products]
+      operationId: getProductById
+      summary: Get product by id (admin)
+      description: Used by admin edit form. Prefer registering before slug routes if needed.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Product or null
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Product"
+                  - type: "null"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /products/{id}:
+    put:
+      tags: [Products]
+      operationId: updateProduct
+      summary: Update product (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductWriteInput"
+      responses:
+        "200":
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /products/{id}/active:
+    patch:
+      tags: [Products]
+      operationId: setProductActive
+      summary: Activate or deactivate product (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [isActive]
+              properties:
+                isActive:
+                  type: boolean
+      responses:
+        "200":
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+
   /categories:
     get:
       tags: [Categories]
       operationId: getCategories
       summary: List all categories
-      description: Active categories for navigation and filters.
+      description: |
+        Active categories for navigation by default. Pass `includeInactive=true` for admin.
+      parameters:
+        - $ref: "#/components/parameters/includeInactive"
       responses:
         "200":
           description: Categories
@@ -277,31 +401,116 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Category"
-              examples:
-                allCategories:
-                  value:
-                    - id: supplements
-                      slug: supplements
-                      name: Supplements
-                      description: Protein, creatine, amino acids and daily performance support.
-                      imageUrl: https://picsum.photos/seed/cat-supplements/600/400
-                      isActive: true
-                    - id: hydration
-                      slug: hydration
-                      name: Hydration
-                      description: Electrolytes, carbolytes and hydration products.
-                      imageUrl: https://picsum.photos/seed/cat-hydration/600/400
-                      isActive: true
         "500":
           $ref: "#/components/responses/InternalServerError"
+    post:
+      tags: [Categories]
+      operationId: createCategory
+      summary: Create category (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryWriteInput"
+      responses:
+        "201":
+          description: Category created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /categories/by-id/{id}:
+    get:
+      tags: [Categories]
+      operationId: getCategoryById
+      summary: Get category by id (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Category or null
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Category"
+                  - type: "null"
+
+  /categories/{id}:
+    put:
+      tags: [Categories]
+      operationId: updateCategory
+      summary: Update category (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryWriteInput"
+      responses:
+        "200":
+          description: Updated category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /categories/{id}/active:
+    patch:
+      tags: [Categories]
+      operationId: setCategoryActive
+      summary: Activate or deactivate category (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [isActive]
+              properties:
+                isActive:
+                  type: boolean
+      responses:
+        "200":
+          description: Updated category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
 
   /categories/{slug}:
     get:
       tags: [Categories]
       operationId: getCategoryBySlug
       summary: Get category by slug
-      description: |
-        Returns a category or JSON `null` when not found (`Category | null` in frontend).
       parameters:
         - name: slug
           in: path
@@ -318,74 +527,164 @@ paths:
                 oneOf:
                   - $ref: "#/components/schemas/Category"
                   - type: "null"
-              examples:
-                found:
-                  value:
-                    id: supplements
-                    slug: supplements
-                    name: Supplements
-                    description: Protein, creatine, amino acids and daily performance support.
-                    imageUrl: https://picsum.photos/seed/cat-supplements/600/400
-                    isActive: true
         "404":
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
   /orders:
+    get:
+      tags: [Orders]
+      operationId: listOrders
+      summary: List orders (admin)
+      description: Requires ROLE_ADMIN. Used when `VITE_USE_MOCK_ORDERS=false`.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/OrderStatus"
+      responses:
+        "200":
+          description: Orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
     post:
       tags: [Orders]
       operationId: createOrder
       summary: Create order (checkout)
       description: |
-        **Planned** — not yet called from the frontend (`CheckoutPage` uses mock delay only).
-        Accepts cart line items plus customer and shipping details from the checkout form.
+        Called from `CheckoutPage` via `orderRepository.create`.
+        Flat shipping rate in the frontend mock is `3.5` EUR when subtotal > 0.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/CreateOrderRequest"
-            examples:
-              sampleOrder:
-                value:
-                  customer:
-                    firstName: Maria
-                    lastName: Papadopoulou
-                    email: maria@example.com
-                    phone: "+30 210 1234567"
-                  shippingAddress:
-                    address: Leoforos Kifisias 45
-                    city: Marousi
-                    postalCode: "15125"
-                  items:
-                    - productId: "1"
-                      quantity: 2
-                      unitPrice: 34.9
-                    - productId: "3"
-                      quantity: 1
-                      unitPrice: 2.8
-                  notes: Please call before delivery.
       responses:
+        "200":
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
         "201":
           description: Order created
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/OrderResponse"
-              examples:
-                created:
-                  value:
-                    id: ord_7f3a9c2b
-                    status: pending
-                    subtotal: 72.6
-                    shipping: 4.5
-                    total: 77.1
-                    createdAt: "2026-06-04T14:30:00Z"
+                $ref: "#/components/schemas/Order"
         "400":
           $ref: "#/components/responses/BadRequest"
         "500":
           $ref: "#/components/responses/InternalServerError"
+
+  /orders/{id}:
+    get:
+      tags: [Orders]
+      operationId: getOrderById
+      summary: Get order by id (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Order or null
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Order"
+                  - type: "null"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /orders/{id}/status:
+    patch:
+      tags: [Orders]
+      operationId: updateOrderStatus
+      summary: Update order status (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  $ref: "#/components/schemas/OrderStatus"
+      responses:
+        "200":
+          description: Updated order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /admin/customers:
+    get:
+      tags: [Admin]
+      operationId: listCustomers
+      summary: List customers (admin)
+      description: Requires ROLE_ADMIN. Used when `VITE_USE_MOCK_AUTH=false`.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Users without passwords
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuthUser"
+
+  /admin/customers/{id}:
+    get:
+      tags: [Admin]
+      operationId: getCustomer
+      summary: Get customer by id (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User or null
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/AuthUser"
+                  - type: "null"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
 components:
   parameters:
@@ -433,6 +732,19 @@ components:
       schema:
         type: boolean
       example: true
+    includeInactive:
+      name: includeInactive
+      in: query
+      description: When true, include inactive products/categories (admin)
+      schema:
+        type: boolean
+      example: true
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
 
   schemas:
     ProductSortBy:
@@ -624,20 +936,56 @@ components:
           type: string
           description: Optional delivery instructions
 
-    OrderResponse:
+    OrderStatus:
+      type: string
+      enum: [PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED]
+      description: Matches `OrderStatus` in `src/features/orders/types/order.types.ts`
+
+    OrderItem:
       type: object
-      description: |
-        Checkout response DTO (frontend contract). Persist orders with domain statuses
-        PENDING, PAID, SHIPPED, DELIVERED, CANCELLED — map to this JSON for now.
-        See docs/BACKEND_DEVELOPER.md §7.
-      required: [id, status, subtotal, total, createdAt]
+      required: [productId, productName, quantity, unitPrice]
+      properties:
+        productId:
+          type: string
+        productName:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+        unitPrice:
+          type: number
+          format: double
+
+    Order:
+      type: object
+      description: Full order DTO used by checkout response and admin order pages
+      required:
+        [
+          id,
+          status,
+          customer,
+          shippingAddress,
+          items,
+          subtotal,
+          shipping,
+          total,
+          createdAt,
+        ]
       properties:
         id:
           type: string
         status:
+          $ref: "#/components/schemas/OrderStatus"
+        customer:
+          $ref: "#/components/schemas/OrderCustomer"
+        shippingAddress:
+          $ref: "#/components/schemas/OrderShippingAddress"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        notes:
           type: string
-          enum: [pending, confirmed, cancelled]
-          description: Checkout DTO only; DB should use PENDING/PAID/SHIPPED/DELIVERED/CANCELLED
         subtotal:
           type: number
           format: double
@@ -647,6 +995,110 @@ components:
         total:
           type: number
           format: double
+        createdAt:
+          type: string
+          format: date-time
+
+    ProductWriteInput:
+      type: object
+      description: Admin create/update body (slug optional — server may generate)
+      required:
+        [
+          name,
+          description,
+          shortDescription,
+          categoryId,
+          price,
+          imageUrl,
+          gallery,
+          stockQuantity,
+          isActive,
+          isFeatured,
+          isNew,
+          tags,
+        ]
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        shortDescription:
+          type: string
+        categoryId:
+          type: string
+        brand:
+          type: string
+        price:
+          type: number
+        compareAtPrice:
+          type: number
+        imageUrl:
+          type: string
+        gallery:
+          type: array
+          items:
+            type: string
+        stockQuantity:
+          type: integer
+        isActive:
+          type: boolean
+        isFeatured:
+          type: boolean
+        isNew:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: string
+        nutritionalInfo:
+          $ref: "#/components/schemas/ProductNutritionalInfo"
+
+    CategoryWriteInput:
+      type: object
+      required: [name, description, isActive]
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        imageUrl:
+          type: string
+        isActive:
+          type: boolean
+
+    AuthUser:
+      type: object
+      required: [id, firstName, lastName, email, role, createdAt]
+      properties:
+        id:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [CUSTOMER, ADMIN]
+        defaultAddress:
+          type: object
+          properties:
+            street:
+              type: string
+            city:
+              type: string
+            postalCode:
+              type: string
+            country:
+              type: string
         createdAt:
           type: string
           format: date-time

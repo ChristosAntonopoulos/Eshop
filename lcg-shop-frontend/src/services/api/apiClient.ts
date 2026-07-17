@@ -60,4 +60,38 @@ export const apiClient = {
 
     return response.json() as Promise<T>;
   },
+
+  async put<T>(path: string, body: unknown): Promise<T> {
+    const response = await fetch(buildUrl(path), {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        ...authHeaders(),
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      throw new Error(`PUT ${path} failed with status ${response.status}`);
+    }
+
+    return response.json() as Promise<T>;
+  },
+
+  async patch<T>(path: string, body: unknown): Promise<T> {
+    const response = await fetch(buildUrl(path), {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...authHeaders(),
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      throw new Error(`PATCH ${path} failed with status ${response.status}`);
+    }
+
+    return response.json() as Promise<T>;
+  },
 };

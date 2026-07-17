@@ -8,13 +8,16 @@ import { Card } from "@/components/ui/Card";
 import { CartSummary } from "@/components/cart/CartSummary";
 import { useCart } from "@/features/cart/CartContext";
 import { useAuth } from "@/features/auth/AuthContext";
+import { orderRepository } from "@/services/orders";
 import styles from "./CheckoutPage.module.css";
 
 export function CheckoutPage() {
   const { items, subtotal, clearCart } = useCart();
   const { user, isAuthenticated } = useAuth();
   const [submitted, setSubmitted] = useState(false);
+  const [orderId, setOrderId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const defaultValues = {
     firstName: user?.firstName ?? "",
@@ -29,10 +32,42 @@ export function CheckoutPage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    clearCart();
-    setSubmitted(true);
-    setLoading(false);
+    setError(null);
+
+    const form = new FormData(e.currentTarget);
+
+    try {
+      const order = await orderRepository.create({
+        customer: {
+          firstName: String(form.get("firstName") ?? "").trim(),
+          lastName: String(form.get("lastName") ?? "").trim(),
+          email: String(form.get("email") ?? "").trim(),
+          phone: String(form.get("phone") ?? "").trim(),
+        },
+        shippingAddress: {
+          address: String(form.get("address") ?? "").trim(),
+          city: String(form.get("city") ?? "").trim(),
+          postalCode: String(form.get("postalCode") ?? "").trim(),
+        },
+        items: items.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: item.price,
+          productName: item.name,
+        })),
+        notes: String(form.get("notes") ?? "").trim() || undefined,
+      });
+
+      clearCart();
+      setOrderId(order.id);
+      setSubmitted(true);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Could not place the order.",
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (items.length === 0 && !submitted) {
@@ -54,8 +89,17 @@ export function CheckoutPage() {
           <h1>Order placed!</h1>
           <p>
             Thank you for shopping at LCG Shop
-            {isAuthenticated && user ? `, ${user.firstName}` : ""}. This is a
-            demo checkout — no payment was processed.
+            {isAuthenticated && user ? `, ${user.firstName}` : ""}.
+            {orderId ? (
+              <>
+                {" "}
+                Your order reference is <strong>{orderId}</strong>.
+              </>
+            ) : null}
+          </p>
+          <p>
+            This is a demo checkout — no payment was processed. Admins can review
+            the order in the admin panel.
           </p>
           <Link to="/products">
             <Button variant="accent">Continue shopping</Button>
@@ -97,7 +141,11 @@ export function CheckoutPage() {
       )}
 
       <div className={styles.layout}>
-        <form className={styles.form} onSubmit={handleSubmit} key={user?.id ?? "guest"}>
+        <form
+          className={styles.form}
+          onSubmit={handleSubmit}
+          key={user?.id ?? "guest"}
+        >
           <h2>Contact</h2>
           <div className={styles.row}>
             <Input
@@ -167,6 +215,12 @@ export function CheckoutPage() {
             rows={3}
             placeholder="Delivery instructions, pickup time, etc."
           />
+
+          {error && (
+            <p role="alert" className={styles.errorMsg}>
+              {error}
+            </p>
+          )}
 
           <Button type="submit" variant="accent" size="lg" isLoading={loading}>
             Place order

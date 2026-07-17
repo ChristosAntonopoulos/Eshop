@@ -82,10 +82,12 @@ Default `.env`:
 
 ```env
 VITE_USE_MOCK_DATA=true
+VITE_USE_MOCK_AUTH=true
+VITE_USE_MOCK_ORDERS=true
 VITE_API_BASE_URL=http://localhost:8080/api
 ```
 
-With `VITE_USE_MOCK_DATA=true`, all product and category data comes from `src/data/mockProducts.ts` and `src/data/mockCategories.ts`. The cart is stored in the browser (`localStorage`), not on a server.
+With mocks on, product/category data comes from `src/data/` (admin mutations persist to `localStorage`). Orders use `VITE_USE_MOCK_ORDERS`. The cart is stored in the browser (`localStorage`), not on a server.
 
 ### Browse the API contract (Swagger)
 
@@ -142,9 +144,13 @@ Map your **Product** entity to the **Product DTO** the frontend expects (extra J
 
 ### Step 3 — Orders (checkout)
 
-`POST /api/orders` is defined in OpenAPI but **not called from the React app yet** (`CheckoutPage` uses a fake delay). You can implement and test with Swagger or Postman first, then the frontend team will wire `apiClient.post("/orders", ...)`.
+`POST /api/orders` is called from `CheckoutPage` via `orderRepository` when `VITE_USE_MOCK_ORDERS=false`. Admin order management uses `GET /orders`, `GET /orders/{id}`, `PATCH /orders/{id}/status`.
 
-### Step 4+ — Auth, server cart, admin
+### Step 4+ — Auth, admin customers, catalog writes
+
+- Auth: `VITE_USE_MOCK_AUTH=false`
+- Admin customers: `GET /admin/customers*` (same auth flag)
+- Admin product/category CRUD: same as catalog (`VITE_USE_MOCK_DATA=false`) — see [JAVA_BACKEND_DEVELOPER.md](./JAVA_BACKEND_DEVELOPER.md) §9 and [openapi.yaml](./openapi.yaml)
 
 See [§8 Recommended implementation phases](#8-recommended-implementation-phases).
 
@@ -162,17 +168,21 @@ See [§8 Recommended implementation phases](#8-recommended-implementation-phases
 
 | Method | Path | Wired in UI |
 |--------|------|-------------|
-| `GET` | `/products` | Yes |
+| `GET` | `/products` (+ admin filters) | Yes |
+| `POST` / `PUT` / `PATCH` | `/products…` | Yes (admin) |
 | `GET` | `/products/featured` | Yes |
 | `GET` | `/products/{slug}` | Yes |
 | `GET` | `/products/{id}/related` | Yes |
+| `GET` | `/products/by-id/{id}` | Yes (admin) |
 | `GET` | `/categories` | Yes |
+| `POST` / `PUT` / `PATCH` | `/categories…` | Yes (admin) |
 | `GET` | `/categories/{slug}` | Yes |
-| `POST` | `/orders` | No (contract only) |
+| `POST` | `/orders` | Yes (checkout) |
+| `GET` / `PATCH` | `/orders…` | Yes (admin) |
+| `GET` | `/admin/customers*` | Yes (admin) |
 
 HTTP client: `src/services/api/apiClient.ts`  
-Product client: `src/services/products/httpProductRepository.ts`  
-Category client: `src/services/categories/httpCategoryRepository.ts`
+See also: `httpProductRepository`, `httpCategoryRepository`, `httpOrderRepository`, `httpAdminCustomerRepository`.
 
 Full details: [API.md](./API.md) and [openapi.yaml](./openapi.yaml).
 
@@ -473,7 +483,7 @@ There is **no mismatch in the repo’s C# code** (backend not added yet). The ta
 | Address | `country`, `isDefault` | Not in checkout form | Persist with defaults; extend API later |
 | Cart / CartItem | Server entities | Client-only `localStorage` | Implement DB tables in a later phase |
 | Order `totalAmount` | Single field | Response: `subtotal`, `shipping`, `total` | Compute breakdown in DTO; store `TotalAmount` in DB |
-| Order status | `PENDING`, `PAID`, `SHIPPED`, `DELIVERED`, `CANCELLED` | Response enum: `pending`, `confirmed`, `cancelled` | Store domain enum; map to checkout DTO for now |
+| Order status | `PENDING`, `CONFIRMED`, `SHIPPED`, `DELIVERED`, `CANCELLED` | Same uppercase strings in JSON | Align DB enum with frontend `OrderStatus` |
 | OrderItem | `productName`, `priceAtPurchase` | Request: `productId`, `quantity`, `unitPrice` | Load name from Product; save snapshots on order create |
 | Order | `shippingAddressId` | Inline `shippingAddress` in body | Create `Address` row, set FK on `Order` |
 | Auth | Designed early | Not used | Nullable `PasswordHash`; add JWT/cookies later |

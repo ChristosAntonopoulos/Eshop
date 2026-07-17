@@ -56,16 +56,18 @@ This guide is for the **Java** developer connecting a **Spring Boot** API to the
 - Product & category pages (mock JSON in `src/data/`)
 - Cart (browser `localStorage`)
 - Login / register / account (mock auth in `localStorage`)
-- Checkout (demo submit — no real `POST /orders` yet)
+- Checkout → creates mock orders (`VITE_USE_MOCK_ORDERS`)
+- Admin panel at `/admin` (products, categories, orders, customers)
 
 **What you replace gradually:**
 
 | Frontend flag | Switches |
 |---------------|----------|
-| `VITE_USE_MOCK_DATA=false` | Products + categories → your API |
-| `VITE_USE_MOCK_AUTH=false` | Login / register / session → your API |
+| `VITE_USE_MOCK_DATA=false` | Products + categories (storefront **and** admin CRUD) → your API |
+| `VITE_USE_MOCK_AUTH=false` | Login / register / session **and** admin customers → your API |
+| `VITE_USE_MOCK_ORDERS=false` | Checkout create-order **and** admin orders → your API |
 
-Catalog and auth are **independent** — you can connect products first and auth later.
+Catalog, auth, and orders are **independent** — connect them in any order.
 
 ---
 
@@ -95,6 +97,7 @@ Open **http://localhost:3333/api-docs.html** — lists catalog and order schemas
 ```env
 VITE_USE_MOCK_DATA=true
 VITE_USE_MOCK_AUTH=true
+VITE_USE_MOCK_ORDERS=true
 VITE_API_BASE_URL=http://localhost:8080/api
 ```
 
@@ -116,8 +119,12 @@ All HTTP calls go through **`src/services/api/apiClient.ts`**:
 | Products | `mockProductRepository.ts` | `httpProductRepository.ts` | `VITE_USE_MOCK_DATA` |
 | Categories | `mockCategoryRepository.ts` | `httpCategoryRepository.ts` | `VITE_USE_MOCK_DATA` |
 | Auth | `mockAuthRepository.ts` | `httpAuthRepository.ts` | `VITE_USE_MOCK_AUTH` |
+| Orders | `mockOrderRepository.ts` | `httpOrderRepository.ts` | `VITE_USE_MOCK_ORDERS` |
+| Admin customers | `mockAdminCustomerRepository.ts` | `httpAdminCustomerRepository.ts` | `VITE_USE_MOCK_AUTH` |
 
 **You do not need to change frontend code** if your API matches the contracts below.
+
+**Admin UI:** `/admin` (Dashboard, Products, Categories, Orders, Customers). Guarded by `role === "ADMIN"`. Demo login: `admin@lcgshop.gr` / `admin123`.
 
 ---
 
@@ -336,6 +343,7 @@ Base: `{VITE_API_BASE_URL}` → `http://localhost:8080/api`
 | `maxPrice` | number | `50` | Inclusive |
 | `sortBy` | enum | `price-asc` | `newest`, `price-asc`, `price-desc`, `name` |
 | `onlyInStock` | boolean | `true` | Exclude `stockQuantity === 0` |
+| `includeInactive` | boolean | `true` | Admin catalog — include inactive products |
 
 **Response:** `200` + `ProductDto[]` (may be empty)
 
@@ -343,13 +351,47 @@ Base: `{VITE_API_BASE_URL}` → `http://localhost:8080/api`
 
 Full schema: [openapi.yaml](./openapi.yaml) → `components.schemas.Product`
 
-### Orders (checkout — implement early, wire UI later)
+### Catalog writes (admin — `/admin` products & categories)
 
-| Method | Path | Frontend wired | Notes |
-|--------|------|----------------|-------|
-| `POST` | `/orders` | Not yet | Body: `CreateOrderRequest` |
+Require `Authorization: Bearer` + `ROLE_ADMIN`. Toggle: `VITE_USE_MOCK_DATA=false`.
 
-`CheckoutPage` currently fakes success. Implement the endpoint so it is ready when frontend wires `apiClient.post("/orders", body)`.
+| Method | Path | Frontend |
+|--------|------|----------|
+| `POST` | `/products` | Admin create product |
+| `GET` | `/products/by-id/{id}` | Admin edit form |
+| `PUT` | `/products/{id}` | Admin update |
+| `PATCH` | `/products/{id}/active` | Body `{ isActive }` |
+| `POST` | `/categories` | Admin create |
+| `GET` | `/categories/by-id/{id}` | Admin |
+| `PUT` | `/categories/{id}` | Admin update |
+| `PATCH` | `/categories/{id}/active` | Body `{ isActive }` |
+| `GET` | `/categories` | Also accepts `includeInactive=true` |
+
+### Orders (checkout + admin)
+
+Toggle: `VITE_USE_MOCK_ORDERS=false`. Types: `src/features/orders/types/order.types.ts`.
+
+| Method | Path | Auth | Frontend |
+|--------|------|------|----------|
+| `POST` | `/orders` | Public (guest OK) | Checkout page |
+| `GET` | `/orders` | Admin | Admin order list (`?status=`) |
+| `GET` | `/orders/{id}` | Admin | Admin order detail |
+| `PATCH` | `/orders/{id}/status` | Admin | Body `{ status }` |
+
+**Order status enum (JSON):** `PENDING` \| `CONFIRMED` \| `SHIPPED` \| `DELIVERED` \| `CANCELLED`
+
+**Response:** full `Order` object (customer, shippingAddress, items with `productName`, subtotal, shipping, total, createdAt) — see OpenAPI `Order` schema.
+
+### Admin customers
+
+Toggle: `VITE_USE_MOCK_AUTH=false` (same flag as auth).
+
+| Method | Path | Frontend |
+|--------|------|----------|
+| `GET` | `/admin/customers` | Admin customers list |
+| `GET` | `/admin/customers/{id}` | Admin customer detail |
+
+Return `AuthUser` DTOs (never password hashes).
 
 ---
 
@@ -630,12 +672,14 @@ For `/{id}/related`: the path variable is **product id** (`"1"`), not slug (`"wh
 | Phase | Build in Java | Frontend `.env` | Verify |
 |-------|---------------|-----------------|--------|
 | **0** | Spring Boot project, CORS, health `GET /actuator/health` | mocks on | API starts on 8080 |
-| **1** | JPA + Flyway: `Category`, `Product`; seed data | `MOCK_DATA=false` | Home + product pages load |
+| **1** | JPA + Flyway: `Category`, `Product`; seed data | `VITE_USE_MOCK_DATA=false` | Home + product pages load |
 | **2** | Query filters + sort on `GET /products` | same | Search, category filter, sort work |
-| **3** | `Customer`, `Address`, `Order`, `OrderItem`; `POST /orders` | same | Test with Swagger / curl |
-| **4** | JWT auth: login, register, `/auth/me` | `MOCK_AUTH=false` | Login page, header avatar, checkout prefill |
-| **5** | Admin endpoints (optional) | same | `ADMIN` role seed user |
-| **6** | Server-side cart (optional) | frontend change needed | Later |
+| **3** | Admin catalog writes (`POST/PUT/PATCH` products & categories) | same | `/admin/products`, `/admin/categories` |
+| **4** | `Customer`, `Address`, `Order`, `OrderItem`; `POST /orders` | `VITE_USE_MOCK_ORDERS=false` | Checkout creates real orders |
+| **5** | Admin order list/detail/status | same | `/admin/orders` |
+| **6** | JWT auth: login, register, `/auth/me` | `VITE_USE_MOCK_AUTH=false` | Login, checkout prefill |
+| **7** | `GET /admin/customers*` | same | `/admin/customers` |
+| **8** | Server-side cart (optional) | frontend change needed | Later |
 
 ---
 
@@ -730,7 +774,8 @@ Or a Spring `ApplicationRunner` that reads JSON exported from mock files.
 4. **Returning entity with lazy `Category`** — serialize DTOs only; avoid `LazyInitializationException`.
 5. **Blocking guest orders** — `POST /orders` must be `permitAll()`.
 6. **Wrong password field in login** — frontend sends `{ email, password }`, not `username`.
-7. **Enum case** — role is `"CUSTOMER"` / `"ADMIN"` (uppercase), order checkout status is lowercase `pending`.
+7. **Enum case** — role is `"CUSTOMER"` / `"ADMIN"` (uppercase). Order status is uppercase `PENDING` / `CONFIRMED` / `SHIPPED` / `DELIVERED` / `CANCELLED` (matches admin UI).
+8. **Admin routes without JWT** — product/category writes, order list/status, and `/admin/customers` must require `ROLE_ADMIN`.
 
 ---
 
@@ -746,9 +791,12 @@ Or a Spring `ApplicationRunner` that reads JSON exported from mock files.
 - [ ] Implement `GET /categories`, `GET /categories/{slug}`
 - [ ] Set `VITE_USE_MOCK_DATA=false` — verify shop in browser
 - [ ] Implement all `GET /products*` endpoints (mind routing order)
-- [ ] Implement `POST /orders` with line-item snapshots
+- [ ] Implement admin catalog `POST/PUT/PATCH` — verify `/admin/products`
+- [ ] Implement `POST /orders` + admin order endpoints
+- [ ] Set `VITE_USE_MOCK_ORDERS=false` — place checkout order, see it in `/admin/orders`
 - [ ] Implement JWT auth endpoints
 - [ ] Set `VITE_USE_MOCK_AUTH=false` — test login, account, checkout prefill
+- [ ] Implement `GET /admin/customers*` — verify `/admin/customers`
 - [ ] Document your API URL for deployment
 
 ---
@@ -757,14 +805,18 @@ Or a Spring `ApplicationRunner` that reads JSON exported from mock files.
 
 | Purpose | Path |
 |---------|------|
-| OpenAPI catalog + orders | `docs/openapi.yaml` |
+| OpenAPI catalog + orders + admin | `docs/openapi.yaml` |
 | Endpoint summary | `docs/API.md` |
 | Domain model + ER diagram | `docs/BACKEND_DEVELOPER.md` |
 | Product TypeScript types | `src/features/products/types/product.types.ts` |
+| Order TypeScript types | `src/features/orders/types/order.types.ts` |
+| HTTP product repo | `src/services/products/httpProductRepository.ts` |
+| HTTP category repo | `src/services/categories/httpCategoryRepository.ts` |
+| HTTP order repo | `src/services/orders/httpOrderRepository.ts` |
+| HTTP admin customers | `src/services/admin/httpAdminCustomerRepository.ts` |
+| HTTP auth repo | `src/services/auth/httpAuthRepository.ts` |
+| Admin UI | `src/features/admin/` |
 | Auth TypeScript types | `src/features/auth/types/auth.types.ts` |
-| HTTP product client | `src/services/products/httpProductRepository.ts` |
-| HTTP category client | `src/services/categories/httpCategoryRepository.ts` |
-| HTTP auth client | `src/services/auth/httpAuthRepository.ts` |
 | API client + Bearer header | `src/services/api/apiClient.ts` |
 | Checkout form fields | `src/features/checkout/CheckoutPage.tsx` |
 

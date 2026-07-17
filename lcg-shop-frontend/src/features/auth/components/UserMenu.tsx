@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { LogOut, Settings, User } from "lucide-react";
+import { LogOut, Settings, Shield, User } from "lucide-react";
 import { useAuth } from "@/features/auth/AuthContext";
 import { Button } from "@/components/ui/Button";
 import styles from "./UserMenu.module.css";
@@ -83,6 +83,17 @@ export function UserMenu() {
             <User size={16} />
             My account
           </Link>
+          {isAdmin && (
+            <Link
+              to="/admin"
+              className={styles.dropdownItem}
+              role="menuitem"
+              onClick={() => setOpen(false)}
+            >
+              <Shield size={16} />
+              Admin panel
+            </Link>
+          )}
           <Link
             to="/account"
             className={styles.dropdownItem}
@@ -108,7 +119,7 @@ export function UserMenu() {
 }
 
 export function MobileAuthLinks({ onClose }: { onClose: () => void }) {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isAdmin, logout } = useAuth();
 
   const handleLogout = async () => {
     onClose();
@@ -136,6 +147,11 @@ export function MobileAuthLinks({ onClose }: { onClose: () => void }) {
       <Link to="/account" className={styles.mobileAuthLink} onClick={onClose}>
         My account
       </Link>
+      {isAdmin && (
+        <Link to="/admin" className={styles.mobileAuthLink} onClick={onClose}>
+          Admin panel
+        </Link>
+      )}
       <Button variant="outline" size="sm" fullWidth onClick={handleLogout}>
         Sign out
       </Button>
